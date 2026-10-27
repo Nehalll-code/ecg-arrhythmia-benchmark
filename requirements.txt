@@ -7,3 +7,4 @@ wfdb
 tqdm
 matplotlib
 pytest
+streamlit>=1.50

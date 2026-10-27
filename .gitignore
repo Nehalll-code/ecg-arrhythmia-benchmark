@@ -7,3 +7,7 @@ __pycache__/
 logs/
 .pytest_cache/
 results/*.tmp
+
+# the small demo bundle (sample ECGs + trained checkpoints) is meant to be committed
+!demo/**/*.pt
+!demo/**/*.npz

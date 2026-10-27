@@ -34,6 +34,14 @@ Each `train.py` run writes `outputs/<model>/{metrics.json, val_probs.npy, test_p
 (+ `feat_norm.npz` for the MLP). Tune (`--lr`, `--model-kw '{"d_model":128}'`) on the **validation fold only**;
 the test fold is scored once, after training, with thresholds fitted on val.
 
+## Demo (after training)
+    python make_demo_bundle.py        # packages sample ECGs + checkpoints + results into demo/ (~tens of MB)
+    streamlit run app.py
+Tab 1 runs all four models on one ECG (PTB-XL test or unseen-hospital Georgia) with per-model probabilities,
+thresholds and CPU latency; tab 2 shows the benchmark graphs (per-class AUROC, in-distribution vs external,
+accuracy-vs-cost, confusion matrices, ROC, CIs). `demo/` is self-contained, so it also deploys on Streamlit
+Community Cloud / Hugging Face Spaces. Research demo, not a diagnostic tool.
+
 ## Design decisions worth defending
 * **Multi-label**: sigmoid + BCE, not softmax. Records with no diagnostic superclass are dropped (as in the PTB-XL benchmark protocol).
 * **No leakage**: per-lead z-score uses train-fold statistics only; folds are patient-disjoint; thresholds from val.
