@@ -1,0 +1,9 @@
+data/
+cache/
+outputs/
+__pycache__/
+*.pt
+*.npz
+logs/
+.pytest_cache/
+results/*.tmp
