@@ -1,0 +1,16 @@
+CNN tuning log (all choices made on the validation fold only)
+
+Defaults: lr 1e-3, weight decay 1e-2, batch size 64, seed 42, max 50 epochs, patience 8
+
+trial          lr      wd      bs    best val AUROC   best epoch
+t1_default     0.001   0.01    64    0.9264           10
+t2_lr3e-4      0.0003  0.01    64    0.9247           11
+t3_lr3e-3      0.003   0.01    64    0.9283           8
+t4_wd1e-4      0.001   0.0001  64    0.9263           7
+t5_bs128       0.001   0.01    128   0.9243           8
+t6_bs32        0.001   0.01    32    0.9284           12
+
+Picked: t6_bs32 (batch size 32), highest val AUROC.
+t3_lr3e-3 was within 0.0001, so the two are effectively tied.
+All six configs fell between 0.924 and 0.928, so the CNN is not very sensitive to these settings.
+Final re-run of t6 config into outputs/: val AUROC 0.9298
