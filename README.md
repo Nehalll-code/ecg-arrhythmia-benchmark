@@ -11,10 +11,24 @@ Identical data, split (official patient-disjoint folds 1-8 train / 9 val / 10 te
 
 | Model | Input | File | Owner |
 |---|---|---|---|
-| MLP | engineered features (RR/HRV, QRS width, per-lead stats, band powers) | `models/mlp.py` | M1 |
-| 1D-CNN (ResNet) | raw 1000x12 | `models/cnn.py` | M2 |
-| BiLSTM | raw 1000x12 | `models/bilstm.py` | M3 |
-| Transformer encoder | raw 1000x12 (patch-embedded) | `models/transformer.py` | M4 |
+| MLP | engineered features (RR/HRV, QRS width, per-lead stats, band powers) | `models/mlp.py` | Saurabh Sharad |
+| 1D-CNN (ResNet) | raw 1000x12 | `models/cnn.py` | Riddhima Jain |
+| BiLSTM | raw 1000x12 | `models/bilstm.py` | Ambica Mehra |
+| Transformer encoder | raw 1000x12 (patch-embedded) | `models/transformer.py` | Nehal Verma |
+
+## Results snapshot (PTB-XL test fold 10; full tables in `results/results.md`)
+| Model | Macro AUROC [95% CI] | Macro F1 | Params | CPU latency (ms/ECG) |
+|---|---|---|---|---|
+| MLP (features) | 0.889 [0.878, 0.898] | 0.689 | 73,989 | 0.18 (50.1 incl. feature extraction) |
+| 1D-CNN | 0.924 [0.916, 0.930] | 0.744 | 971,717 | 11.43 |
+| BiLSTM | 0.924 [0.916, 0.930] | 0.738 | 613,605 | 29.21 |
+| Transformer | 0.907 [0.897, 0.915] | 0.713 | 167,237 | 8.23 |
+| Stacked fusion | 0.927 [0.920, 0.934] | 0.745 | - | - |
+
+CNN and BiLSTM are statistically tied; the Transformer (default config, no tuning trials) is third; ordering holds on the
+zero-shot Georgia cohort (all models lose 0.06-0.09 AUROC). Model errors are highly correlated (0.52-0.71), so fusion gains
+only ~0.003 AUROC (`results/ensemble.md`). Each of MLP/CNN/BiLSTM had a 6-config tuning budget (logs in `tuning_logs/`,
+`tuning/`, `results/bilstm/`); the Transformer was trained once with defaults (`tuning_logs/transformer_tuning_log.md`).
 
 ## Pipeline
     pip install -r requirements.txt
@@ -27,6 +41,7 @@ Identical data, split (official patient-disjoint folds 1-8 train / 9 val / 10 te
     python external_eval.py                        # zero-shot Georgia scores for every trained model
     python efficiency.py                           # params / FLOPs / CPU latency
     python compare.py                              # results/results.md + figures (tables, CIs, error analysis)
+    python ensemble.py                             # soft/weighted voting, stacking, disagreement -> results/ensemble.md
     python run_all.py                              # or: train all 4 -> external eval -> efficiency -> compare in one go
     python -m pytest tests -q                      # synthetic-data unit + end-to-end smoke tests
 
@@ -53,3 +68,14 @@ Community Cloud / Hugging Face Spaces. Research demo, not a diagnostic tool.
 * **External preprocessing** is identical to PTB-XL: 500->100 Hz polyphase resampling, first 10 s (zero-pad if short), 0.5 Hz high-pass, PTB-XL train mu/sd.
 * **Uncertainty**: 95% CIs by patient-level bootstrap; model-vs-model comparisons by paired bootstrap, so "CNN beats BiLSTM" is only claimed when it is not noise.
 * Accuracy is never reported: classes are imbalanced (a predict-NORM model looks good). Primary = macro AUROC; secondary = macro F1, per-class P/R/F1, and a multi-label confusion matrix.
+
+## Reproducing the results without retraining
+Final per-model predictions are committed: `results/final/{mlp,cnn,transformer}/` and `results/bilstm/final/`
+(`metrics.json`, `val_probs.npy`, `test_probs.npy`). Copy them to `outputs/<model>/` (BiLSTM from `results/bilstm/final/`),
+build the signal cache (`data.py`), then run `compare.py` and `ensemble.py`. Checkpoints (`best.pt`) are not committed except for the BiLSTM.
+
+## Repository map
+* `data.py`, `train.py`, `evaluate.py`: shared preprocessing, training loop, metrics (do not edit per model).
+* `models/`: the four architectures. `external*.py`, `efficiency.py`, `compare.py`, `ensemble.py`: analysis.
+* `results/`: generated tables/figures, plus final predictions. `tuning_logs/`, `tuning/`: per-model tuning notes.
+* `report/`: project report (draft). `HANDOFF.md`, `KAGGLE.md`: training instructions for the team.
